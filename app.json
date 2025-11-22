@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "lunaTalk-app",
-    "slug": "lunaTalk-app",
-    "version": "1.0.0",
+    "name": "lunaTalk",
+    "slug": "lunaTalk",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "lunatalkapp",
+    "scheme": "lunatalk",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {

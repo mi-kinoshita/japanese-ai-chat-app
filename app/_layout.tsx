@@ -1,59 +1,76 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { useEffect, useState } from "react";
+import { Stack, SplashScreen, router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { useColorScheme } from '@/components/useColorScheme';
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+const SURVEY_COMPLETED_KEY = "hasCompletedSurvey";
+
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    ...FontAwesome.font,
-  });
-
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+  const [isSurveyCompleted, setIsSurveyCompleted] = useState<boolean | null>(
+    null
+  );
+  const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    async function checkSurveyStatus() {
+      try {
+        const surveyCompleted = await AsyncStorage.getItem(
+          SURVEY_COMPLETED_KEY
+        );
+        const completed = surveyCompleted === "true";
+        setIsSurveyCompleted(completed);
+      } catch (e) {
+        console.error("Failed to load survey status:", e);
+        setIsSurveyCompleted(false);
+      } finally {
+        setAppIsReady(true);
+      }
     }
-  }, [loaded]);
 
-  if (!loaded) {
+    checkSurveyStatus();
+  }, []);
+
+  useEffect(() => {
+    if (appIsReady && isSurveyCompleted !== null) {
+      SplashScreen.hideAsync();
+
+      if (!isSurveyCompleted) {
+        router.replace("/survey");
+      } else {
+        router.replace("/(tabs)");
+      }
+    }
+  }, [appIsReady, isSurveyCompleted]);
+
+  if (!appIsReady || isSurveyCompleted === null) {
     return null;
   }
 
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="survey" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="paymentScreen" options={{ headerShown: false }} />
+
+        <Stack.Screen
+          name="chatScreen"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="newChatStartScreen"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
-    </ThemeProvider>
+      <StatusBar style="light" />
+    </GestureHandlerRootView>
   );
 }
